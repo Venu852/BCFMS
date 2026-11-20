@@ -1,0 +1,41 @@
+{% load static bcfms %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Sign in{% endblock %} · BCFMS</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="tricolour" aria-hidden="true"></div>
+<div class="auth">
+  <section class="auth-art">
+    <a class="brand" href="{% url 'index' %}" style="padding:0">
+      <span class="brand-mark">{% mark 44 %}</span>
+      <span class="brand-text"><b>BCFMS</b><span lang="hi">अपराध अभिलेख प्रबंधन प्रणाली</span><span>Crime File Management System</span></span>
+    </a>
+    <div>
+      <h1>Case files that cannot be quietly rewritten.</h1>
+      <p>Every FIR, piece of evidence and court order is hashed and sealed on a private blockchain, so any later change is visible to everyone who checks.</p>
+      <ul>
+        <li>{% icon "shield" %}<span>Smart contracts enforce who may act and in what order, not just the screen you see.</span></li>
+        <li>{% icon "link" %}<span>An unbroken chain of custody for every item of evidence.</span></li>
+        <li>{% icon "spark" %}<span>Ask questions across case files in plain language. The model runs on this server; nothing is sent outside.</span></li>
+      </ul>
+    </div>
+    <div class="auth-chain" aria-hidden="true">
+      <span>#41</span><i></i><span>#42</span><i></i><span>#43</span><i></i><span>#44</span><i></i><span>#45</span>
+    </div>
+  </section>
+  <section class="auth-form">
+    <div class="auth-box">
+      {% if messages %}{% for message in messages %}
+      <div class="notice {% if message.tags == 'error' %}bad{% elif message.tags == 'success' %}good{% endif %}"><div>{{ message }}</div></div>
+      {% endfor %}{% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </section>
+</div>
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

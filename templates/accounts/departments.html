@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Departments{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Departments</h1><p>Police stations, forensic laboratories and courts. Case access and sharing work at department level.</p></div></div>
+<div class="grid split">
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Code</th><th>Type</th><th>District</th><th class="right">Members</th></tr></thead>
+        <tbody>
+          {% for d in departments %}
+          <tr><td><b>{{ d.name }}</b></td><td class="mono">{{ d.code }}</td><td>{{ d.get_kind_display }}</td><td>{{ d.district|default:"—" }}</td><td class="right num">{{ d.members.count }}</td></tr>
+          {% empty %}
+          <tr><td colspan="5"><div class="empty"><b>No departments yet</b>Add the first one using the form.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <header><div><h2>Add a department</h2></div></header>
+    <div class="body">
+      <form method="post" novalidate>{% csrf_token %}
+        {% include "partials/fields.html" %}
+        <button class="btn primary">Add department</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

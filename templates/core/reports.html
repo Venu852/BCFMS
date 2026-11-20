@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Reports</h1><p>Case status, crime statistics and department-wise figures for the cases you can access.</p></div>
+  <div class="actions"><a class="btn primary" href="?{{ pdf_query }}">{% icon "download" 16 %} Export PDF</a></div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <div class="body">
+    <form class="filters">
+      <div class="field"><label for="date_from">Filed from</label><input type="date" id="date_from" name="date_from" value="{{ date_from }}"></div>
+      <div class="field"><label for="date_to">Filed to</label><input type="date" id="date_to" name="date_to" value="{{ date_to }}"></div>
+      <div class="field"><label for="department">Police station</label>
+        <select id="department" name="department"><option value="">All stations</option>
+          {% for d in departments %}<option value="{{ d.pk }}" {% if department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+        </select></div>
+      <div class="field"><button class="btn">Apply</button> <a class="btn ghost" href="{% url 'reports' %}">Reset</a></div>
+    </form>
+  </div>
+</div>
+
+<div class="grid cols-4" style="margin-bottom:18px">
+  <div class="card tile"><span class="k">Total cases</span><span class="v">{{ stats.total }}</span></div>
+  <div class="card tile"><span class="k">Open</span><span class="v">{{ stats.open }}</span></div>
+  <div class="card tile"><span class="k">Resolved</span><span class="v">{{ stats.resolved }}</span><span class="s">{{ stats.resolution_rate }}% resolution rate</span></div>
+  <div class="card tile"><span class="k">Convictions</span><span class="v">{{ stats.convicted }}</span></div>
+</div>
+
+<div class="grid cols-2">
+  <div class="card">
+    <header><div><h2>Case status</h2><p>Share of cases at each workflow stage</p></div></header>
+    <div class="body">{% include "partials/status_chart.html" %}</div>
+  </div>
+  <div class="card">
+    <header><div><h2>Cases filed per month</h2><p>Hover a column for its count</p></div></header>
+    <div class="body">
+      {% if stats.monthly %}
+      <div class="columns" role="img" aria-label="Cases filed per month">
+        {% for m in stats.monthly %}<div class="col {% if m.pct == 100 %}peak{% endif %}" title="{{ m.label }}: {{ m.count }}"><b>{{ m.count }}</b><span style="height:{{ m.pct }}%"></span></div>{% endfor %}
+      </div>
+      <div class="col-labels">{% for m in stats.monthly %}<span>{{ m.label|slice:":3" }}</span>{% endfor %}</div>
+      {% else %}<div class="empty">No data for this selection.</div>{% endif %}
+    </div>
+  </div>
+  <div class="card">
+    <header><div><h2>Crime type</h2></div></header>
+    <div class="body">{% include "partials/bars.html" with rows=stats.by_type %}</div>
+  </div>
+  <div class="card">
+    <header><div><h2>District</h2></div></header>
+    <div class="body">{% include "partials/bars.html" with rows=stats.by_district %}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <header><div><h2>Department-wise</h2><p>Cases by station and status</p></div></header>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Department</th><th class="right">Total</th>{% for label in stats.status_labels %}<th class="right">{{ label }}</th>{% endfor %}<th class="right">Resolved</th></tr></thead>
+      <tbody>
+        {% for d in stats.department_table %}
+        <tr><td><b>{{ d.name }}</b></td><td class="right num">{{ d.total }}</td>{% for c in d.counts %}<td class="right num">{{ c }}</td>{% endfor %}<td class="right num">{{ d.resolved_pct }}%</td></tr>
+        {% empty %}
+        <tr><td colspan="8"><div class="empty">No data for this selection.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

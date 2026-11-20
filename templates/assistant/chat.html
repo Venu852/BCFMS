@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static bcfms %}
+{% block title %}Case assistant{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>Case assistant</h1>
+  <p>Ask about your case files in plain language. Answers are built only from files you are allowed to open and cite the documents they came from.</p>
+</div></div>
+
+{% if llm.error or not llm.present %}
+<div class="notice warn">{% icon "alert" %}<div><b>The language model is not available</b>
+  <span>{{ llm.error|default:"The model file was not found." }} You will still get the most relevant passages from the case files.</span></div></div>
+{% endif %}
+
+<div class="chat" id="assistant" data-url="{% url 'assistant_ask' %}">
+  <div class="card chat-panel">
+    <div class="chat-log" id="chat-log" aria-live="polite">
+      <div id="chat-welcome">
+        <h2>What would you like to know?</h2>
+        <p class="muted" style="margin:6px 0 14px">Try one of these, or type your own question below.</p>
+        <div class="suggest">
+          {% if scope %}
+          <button data-ask="Summarise this case in five points.">Summarise this case in five points.</button>
+          <button data-ask="What evidence has been collected and what did the forensic analysis find?">What evidence has been collected and what did forensics find?</button>
+          <button data-ask="Who are the accused and what is their current status?">Who are the accused and what is their status?</button>
+          <button data-ask="What are the open leads and next steps in the investigation?">What are the open leads?</button>
+          {% else %}
+          <button data-ask="Which cases involve a black Pulsar motorcycle?">Which cases involve a black Pulsar motorcycle?</button>
+          <button data-ask="Whose fingerprints were found on the steering lock?">Whose fingerprints were found on the steering lock?</button>
+          <button data-ask="Which cases are linked by the same bank account?">Which cases are linked by the same bank account?</button>
+          <button data-ask="What property was stolen in the Koramangala burglary?">What was stolen in the Koramangala burglary?</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <form class="chat-input" id="chat-form">
+      <textarea id="chat-question" rows="1" placeholder="Ask about a case, a person, a place or a pattern…" aria-label="Your question" maxlength="1500"></textarea>
+      <button class="btn primary" id="chat-send">{% icon "send" 16 %} Ask</button>
+    </form>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Scope</h2></div></header>
+      <div class="body">
+        <div class="field" style="margin:0">
+          <label for="chat-scope">Search in</label>
+          <select id="chat-scope">
+            <option value="">All {{ indexed_cases }} cases I can access</option>
+            {% for case in cases %}<option value="{{ case.case_id }}" {% if scope and scope.pk == case.pk %}selected{% endif %}>{{ case.fir_number }} — {{ case.crime_type }}</option>{% endfor %}
+          </select>
+          <div class="help">Naming an FIR number in your question also limits the answer to that case.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <header><div><h2>How this stays private</h2></div></header>
+      <div class="body small">
+        <p>{% icon "lock" 14 %} <b>Runs on this server.</b> The model ({{ llm.model }}) is a file on disk. No question or case text is sent to any outside service.</p>
+        <p>{% icon "shield" 14 %} <b>Respects your access.</b> Only passages from cases you may open are ever shown to the model. {{ passages }} passages are indexed for you.</p>
+        <p style="margin:0">{% icon "list" 14 %} <b>Accountable.</b> Every question is written to the audit trail. Check important facts against the cited document.</p>
+      </div>
+    </div>
+    {% if history %}
+    <div class="card">
+      <header><div><h2>Your recent questions</h2></div></header>
+      <div class="body">
+        <div class="suggest">
+          {% for item in history %}<button data-ask="{{ item.question }}">{{ item.question|truncatechars:70 }}</button>{% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/assistant.js' %}"></script>{% endblock %}

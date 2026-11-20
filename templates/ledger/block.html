@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Block #{{ block.number }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'explorer' %}">Blockchain</a> / Block #{{ block.number }}</div>
+    <h1>Block #{{ block.number }} {% if check.ok %}<span class="tag good">{% icon "check" 12 %} Valid</span>{% else %}<span class="tag bad">Invalid</span>{% endif %}</h1>
+    <p>{% if block.number %}Sealed {{ block.timestamp|from_ms|date:"d M Y, H:i:s" }} by {{ block.validator|label:book }}{% else %}Genesis block: fixes the authority set and deploys the contracts{% endif %}</p>
+  </div>
+  <div class="actions">
+    {% if block.number %}<a class="btn" href="{% url 'block_detail' block.number|add:'-1' %}">Previous</a>{% endif %}
+    {% if has_next %}<a class="btn" href="{% url 'block_detail' block.number|add:'1' %}">Next</a>{% endif %}
+  </div>
+</div>
+{% if not check.ok %}<div class="notice bad"><div><b>This block fails validation</b><span>{{ check.errors|join:"; " }}</span></div></div>{% endif %}
+
+<div class="card" style="margin-bottom:18px">
+  <header><div><h2>Header</h2><p>The block hash is the SHA-256 of these fields; the validator signs that hash.</p></div></header>
+  <div class="body">
+    <dl class="meta">
+      <dt>Hash</dt><dd><span class="hash full"><span>{{ block.hash }}</span><button type="button" data-copy="{{ block.hash }}">copy</button></span></dd>
+      <dt>Parent hash</dt><dd><span class="hash full"><span>{{ block.parent_hash }}</span></span></dd>
+      <dt>Transactions root</dt><dd class="mono">{{ block.tx_root }}</dd>
+      <dt>Receipts root</dt><dd class="mono">{{ block.receipt_root }}</dd>
+      <dt>State root</dt><dd class="mono">{{ block.state_root }}</dd>
+      <dt>Validator</dt><dd>{% if block.number %}{{ block.validator|label:book }} <span class="mono muted">{{ block.validator }}</span>{% else %}—{% endif %}</dd>
+      <dt>Seal signature</dt><dd class="mono" style="word-break:break-all">{{ block.signature|default:"— (genesis is not signed)" }}</dd>
+      <dt>Gas used</dt><dd class="num">{{ block.gas_used }}</dd>
+    </dl>
+  </div>
+</div>
+
+{% if block.number == 0 %}
+<div class="card"><header><div><h2>Genesis configuration</h2></div></header><div class="body"><pre class="code">{{ block.extra|pretty_json }}</pre></div></div>
+{% else %}
+<div class="card">
+  <header><div><h2>Transactions</h2></div></header>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Transaction</th><th>Call</th><th>From</th><th>Result</th></tr></thead>
+      <tbody>
+        {% for tx in transactions %}
+        <tr>
+          <td>{% include "partials/hash.html" with value=tx.tx_hash tx=True size=8 %}</td>
+          <td><b>{{ tx.contract }}.{{ tx.method }}</b>{% if tx.case_ref %}<span class="sub mono">{{ tx.case_ref }}</span>{% endif %}</td>
+          <td>{{ tx.sender|label:book }}</td>
+          <td>{% if tx.status %}<span class="tag good">Success</span>{% else %}<span class="tag bad">Reverted</span><span class="sub">{{ tx.error }}</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

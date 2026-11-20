@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Verify {{ case.fir_number }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'case_list' %}">Cases</a> / <a href="{{ case.get_absolute_url }}">{{ case.fir_number }}</a> / Verify</div>
+    <h1>Authenticity check</h1>
+    <p>Each record and evidence file was checked just now against the secure ledger.</p>
+  </div>
+  <div class="actions"><a class="btn" href="{% url 'case_pdf' case.case_id %}">{% icon "download" 16 %} Export with integrity report</a></div>
+</div>
+
+{% if report.ok %}
+<div class="verdict good" style="margin-bottom:18px">{% icon "shield" 26 %}<div>
+  <div class="big">Authentic. All {{ report.checks|length }} checks match the blockchain.</div>
+  <div>Nothing in this case file has been altered since it was recorded.</div></div></div>
+{% else %}
+<div class="verdict bad" style="margin-bottom:18px">{% icon "alert" 26 %}<div>
+  <div class="big">Integrity failure. This case file does not match the blockchain.</div>
+  <div>One or more records were changed outside the application. Treat the mismatching records as unreliable and report this to an administrator.</div></div></div>
+{% endif %}
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Record</th><th>Result</th>{% if show_chain %}<th>On-chain value</th><th>Computed now</th>{% endif %}</tr></thead>
+      <tbody>
+        {% for check in report.checks %}
+        <tr>
+          <td><b>{{ check.label }}</b><span class="sub">{{ check.kind }}</span></td>
+          <td>{% if check.ok %}<span class="tag good">{% icon "check" 12 %} Match</span>{% else %}<span class="tag bad">{% icon "x" 12 %} Mismatch</span>{% endif %}
+            {% if check.note %}<span class="sub">{{ check.note }}</span>{% endif %}</td>
+          {% if show_chain %}
+          <td class="mono" title="{{ check.onchain }}">{{ check.onchain|short:9|default:"—" }}</td>
+          <td class="mono" title="{{ check.computed }}">{{ check.computed|short:9|default:"—" }}</td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Admin Office{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Admin Office</h1><p>Officer accounts, activity on the platform and items that need your review.</p></div>
+  <div class="actions">
+    <a class="btn primary" href="{% url 'officer_create' %}">{% icon "plus" 16 %} Create officer login</a>
+    <a class="btn" href="{% url 'audit_log' %}">Activity log</a>
+  </div>
+</div>
+
+<div class="grid cols-4" style="margin-bottom:18px">
+  <a class="card tile" href="{% url 'users' %}"><span class="k">Officer accounts</span><span class="v">{{ officer_count }}</span><span class="s">{{ active_today }} active today</span></a>
+  <a class="card tile" href="{% url 'flags' %}"><span class="k">Flags awaiting review</span><span class="v">{{ open_count }}</span><span class="s">{{ high_count }} high severity</span></a>
+  <a class="card tile" href="{% url 'audit_log' %}"><span class="k">Officer actions today</span><span class="v">{{ actions_today }}</span><span class="s">Excluding page views</span></a>
+  <a class="card tile" href="{% url 'explorer' %}"><span class="k">Blockchain height</span><span class="v">#{{ chain.head.number }}</span><span class="s">{{ chain.transactions }} transactions sealed</span></a>
+</div>
+
+<div class="grid split">
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Flags awaiting review</h2><p>Raised automatically from officer activity</p></div><a class="btn sm" href="{% url 'flags' %}">Review all</a></header>
+      {% for flag in flags %}{% include "partials/flag.html" %}{% empty %}
+      <div class="empty"><b>Nothing to review</b>No officer activity has been flagged.</div>
+      {% endfor %}
+    </div>
+
+    <div class="card">
+      <header><div><h2>Officers</h2><p>Select an officer to see everything they have done</p></div><a class="btn sm" href="{% url 'users' %}">All officers</a></header>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Officer</th><th>Role</th><th>Last activity</th><th class="right">Actions today</th><th class="right">Open flags</th></tr></thead>
+          <tbody>
+            {% for o in roster %}
+            <tr>
+              <td><a href="{% url 'officer_monitor' o.pk %}"><b>{{ o.display_name }}</b></a><span class="sub">{{ o.username }}</span></td>
+              <td>{{ o.get_role_display }}<span class="sub">{{ o.department.name|default:"" }}</span></td>
+              <td>{% if o.last_seen %}{{ o.last_seen|timesince }} ago{% else %}<span class="muted">Never signed in</span>{% endif %}</td>
+              <td class="right num">{{ o.actions_today }}</td>
+              <td class="right num">{% if o.open_flags %}<span class="sev high">{{ o.open_flags }}</span>{% else %}0{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5"><div class="empty"><b>No officer accounts yet</b>Create the first officer login to get started.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Latest officer activity</h2></div><a class="btn sm" href="{% url 'audit_log' %}">Full log</a></header>
+      <div class="body">
+        <ul class="timeline">
+          {% for entry in activity %}
+          <li class="{% if entry.action == 'CHAIN_REVERT' or entry.action == 'ACCESS_DENIED' %}bad{% endif %}">
+            <div class="when">{{ entry.created_at|date:"d M, H:i" }} · {% if entry.actor %}<a href="{% url 'officer_monitor' entry.actor.pk %}">{{ entry.actor_name }}</a>{% else %}{{ entry.actor_name }}{% endif %}</div>
+            <div class="what">{{ entry.action|action_name }}{% if entry.case %} · <a href="{{ entry.case.get_absolute_url }}">{{ entry.case.fir_number }}</a>{% endif %}</div>
+            {% if entry.detail %}<div class="detail">{{ entry.detail|truncatechars:120 }}</div>{% endif %}
+          </li>
+          {% empty %}<li><div class="detail">No officer activity recorded yet.</div></li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <header><div><h2>All cases by status</h2></div><a class="btn sm" href="{% url 'reports' %}">Reports</a></header>
+      <div class="body">{% include "partials/status_chart.html" %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

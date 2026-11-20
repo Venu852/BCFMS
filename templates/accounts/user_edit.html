@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}{{ target.display_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'users' %}">Officers</a> / {{ target.username }}</div>
+    <h1>{{ target.display_name }}</h1>
+    <p>User ID {{ target.username }}</p>
+  </div>
+  <div class="actions"><a class="btn" href="{% url 'officer_monitor' target.pk %}">View activity</a></div>
+</div>
+<div class="grid split">
+  <div class="card">
+    <header><div><h2>Account and role</h2></div></header>
+    <div class="body">
+      <form method="post" novalidate>{% csrf_token %}
+        {% include "partials/fields.html" with columns=True %}
+        <div class="actions"><button class="btn primary">Save changes</button><a class="btn ghost" href="{% url 'users' %}">Cancel</a></div>
+      </form>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Password</h2></div></header>
+      <div class="body">
+        <p class="small muted">{% if target.must_change_password %}The officer has not yet replaced the password issued to them.{% else %}The officer has set their own password.{% endif %} Issuing a new password signs them out and shows you the new one once.</p>
+        {% if target.pk != user.pk %}
+        <form method="post" action="{% url 'officer_reset_password' target.pk %}" data-confirm="Issue a new password for {{ target.display_name }}? Their current password stops working immediately.">{% csrf_token %}
+          <button class="btn">Issue new password</button>
+        </form>
+        {% else %}<a class="btn" href="{% url 'password_change' %}">Change my password</a>{% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <header><div><h2>Ledger identity</h2></div></header>
+      <div class="body">
+        <dl class="meta" style="grid-template-columns:110px minmax(0,1fr)">
+          <dt>Wallet</dt><dd>{% include "partials/hash.html" with value=target.wallet_address size=7 %}</dd>
+          <dt>Contract role</dt><dd>{% if onchain_role %}<span class="tag good">{{ onchain_role }}</span>{% else %}<span class="tag warn">None</span>{% endif %}</dd>
+          <dt>Two-factor</dt><dd>{% if target.mfa_enabled %}<span class="tag good">On</span>{% else %}<span class="tag">Off</span>{% endif %}</dd>
+        </dl>
+        <p class="small muted" style="margin:12px 0 0">Saving the account also updates the role held on the blockchain. A suspended officer's actions are rejected by the smart contracts.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}{{ evidence.uid }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'case_list' %}">Cases</a> / <a href="{{ case.get_absolute_url }}#evidence">{{ case.fir_number }}</a> / {{ evidence.uid }}</div>
+    <h1>{{ evidence.title }}</h1>
+    <p>{{ evidence.get_kind_display }} · {{ evidence.original_name }} · {{ evidence.size|filesize }}</p>
+    <div class="access-line">{% include "partials/access.html" %}<span>{{ access.summary }}</span></div>
+  </div>
+  <div class="actions">
+    {% if is_image or evidence.mime_type == "application/pdf" %}<a class="btn" href="{% url 'evidence_download' evidence.uid %}?inline=1" target="_blank" rel="noopener">Open file</a>{% endif %}
+    <a class="btn" href="{% url 'evidence_download' evidence.uid %}">{% icon "download" 16 %} Download</a>
+    {% if can_transfer %}<a class="btn" href="{% url 'evidence_transfer' evidence.uid %}">Transfer custody</a>{% endif %}
+    {% if can_report %}<a class="btn primary" href="{% url 'forensic_add' evidence.uid %}">Add forensic report</a>{% endif %}
+  </div>
+</div>
+<div class="notice">{% icon "lock" %}<div><b>Opening or downloading this file is recorded</b>
+  <span>Each access is written to the chain of custody under your name.</span></div></div>
+
+<div class="grid split">
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Details</h2></div></header>
+      <div class="body">
+        <dl class="meta">
+          <dt>Evidence ID</dt><dd class="mono">{{ evidence.uid }}</dd>
+          <dt>Description</dt><dd class="prose">{{ evidence.description|default:"—" }}</dd>
+          <dt>Collected</dt><dd>{{ evidence.collected_at|date:"d M Y, H:i" }}{% if evidence.collected_location %} · {{ evidence.collected_location }}{% endif %}</dd>
+          <dt>Registered by</dt><dd>{{ evidence.uploaded_by.display_name }}</dd>
+          <dt>Current custodian</dt><dd><b>{{ evidence.custodian.display_name }}</b> ({{ evidence.custodian.get_role_display }})</dd>
+          {% if show_chain %}
+          <dt>File SHA-256</dt><dd><span class="hash full"><span>{{ evidence.sha256 }}</span><button type="button" data-copy="{{ evidence.sha256 }}">copy</button></span></dd>
+          <dt>Storage</dt><dd class="small muted">Encrypted with AES-256-GCM in the off-chain vault, addressed by its hash. Only the hash is on the blockchain.</dd>
+          {% else %}
+          <dt>Storage</dt><dd class="small muted">Stored encrypted. Any change to the file would be detected.</dd>
+          {% endif %}
+          <dt>Registration</dt><dd>{% include "partials/hash.html" with value=evidence.tx_hash tx=True size=8 %}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <header><div><h2>Forensic reports</h2></div></header>
+      <div class="body">
+        {% for r in reports %}
+        <div style="margin-bottom:18px">
+          <h3>{{ r.title }}</h3>
+          <p class="muted small">{{ r.expert.display_name }} · {{ r.created_at|date:"d M Y, H:i" }} · {{ r.uid }}</p>
+          {% if r.methodology %}<p><b>Methodology.</b> {{ r.methodology }}</p>{% endif %}
+          <p class="prose"><b>Findings.</b> {{ r.findings }}</p>
+          {% if r.conclusion %}<p class="prose"><b>Conclusion.</b> {{ r.conclusion }}</p>{% endif %}
+          {% include "partials/hash.html" with value=r.tx_hash tx=True size=6 %}
+        </div>
+        {% empty %}<p class="muted" style="margin:0">No forensic report has been filed for this item.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <header><div><h2>Chain of custody</h2><p>Oldest first</p></div></header>
+    <div class="body">
+      <ul class="timeline">
+        {% for entry in custody %}
+        <li class="onchain">
+          <div class="when">{{ entry.created_at|date:"d M Y, H:i" }}</div>
+          <div class="what">{{ entry.get_action_display }}{% if entry.to_user %} to {{ entry.to_user.display_name }}{% endif %}</div>
+          <div class="detail">{{ entry.actor.display_name }} ({{ entry.actor.get_role_display }}){% if entry.notes %}<br>{{ entry.notes }}{% endif %}</div>
+          <div style="margin-top:5px">{% include "partials/hash.html" with value=entry.tx_hash tx=True size=5 %}</div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

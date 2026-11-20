@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>{{ user.display_name }}</h1>
+  <p>{{ user.get_role_display }}{% if user.department %} · {{ user.department.name }}{% endif %}</p>
+</div></div>
+
+<div class="grid cols-2">
+  <div class="card">
+    <header><div><h2>Account</h2></div></header>
+    <div class="body">
+      <dl class="meta">
+        <dt>User ID</dt><dd>{{ user.username }}</dd>
+        <dt>Email</dt><dd>{{ user.email|default:"—" }}</dd>
+        <dt>Badge number</dt><dd>{{ user.badge_number|default:"—" }}</dd>
+        <dt>Password</dt><dd><a class="btn sm" href="{% url 'password_change' %}">Change password</a></dd>
+        <dt>Two-factor sign-in</dt>
+        <dd>
+          {% if user.mfa_enabled %}
+          <span class="tag good">On</span>
+          <form method="post" action="{% url 'mfa_disable' %}" class="inline" data-confirm="Turn off two-factor authentication for your account?">{% csrf_token %}
+            <button class="btn sm danger" style="margin-left:8px">Turn off</button></form>
+          {% else %}
+          <span class="tag warn">Off</span> <a class="btn sm" href="{% url 'mfa_setup' %}" style="margin-left:8px">Set up</a>
+          <span class="sub muted small" style="display:block;margin-top:4px">Recommended: adds a code from your phone to your password.</span>
+          {% endif %}
+        </dd>
+      </dl>
+    </div>
+  </div>
+
+  {% if show_chain %}
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Digital identity</h2><p>Your actions are signed with this wallet and recorded on the blockchain.</p></div></header>
+      <div class="body">
+        <dl class="meta">
+          <dt>Wallet address</dt><dd>{% include "partials/hash.html" with value=user.wallet_address size=10 %}</dd>
+          <dt>Public key</dt><dd>{% include "partials/hash.html" with value=user.public_key size=12 %}</dd>
+          <dt>On-chain role</dt><dd>{% if onchain_role %}<span class="tag good">{{ onchain_role }}</span>{% else %}<span class="tag warn">Not registered</span>{% endif %}</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="card">
+      <header><div><h2>API token</h2><p>For integrating court or station systems with the REST API.</p></div></header>
+      <div class="body">
+        {% if token %}
+        <span class="hash full"><span>{{ token.key }}</span><button type="button" data-copy="{{ token.key }}">copy</button></span>
+        <p class="small muted" style="margin-top:8px">Send as <span class="mono">Authorization: Token &lt;key&gt;</span> to <span class="mono">/api/v1/</span>.</p>
+        {% else %}<p class="muted">No token yet.</p>{% endif %}
+        <form method="post" {% if token %}data-confirm="Generate a new token? The current one stops working immediately."{% endif %}>{% csrf_token %}
+          <input type="hidden" name="action" value="token">
+          <button class="btn">{% if token %}Regenerate token{% else %}Generate token{% endif %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <header><div><h2>Your accountability</h2></div></header>
+    <div class="body">
+      <p>Everything you do on this system is recorded against your user ID and signed with a digital key that belongs only to your account.</p>
+      <p class="muted small" style="margin:0">This protects you as well: no one else's action can be attributed to you, and no record you file can be changed without it being detected.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

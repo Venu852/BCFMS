@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static bcfms %}
+{% block title %}Blockchain{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Blockchain explorer</h1><p>A private, Ethereum-style ledger. Blocks are sealed in turn by three authority nodes (Proof of Authority).</p></div>
+  <div class="actions">
+    <button class="btn" data-verify="0" data-url="{% url 'chain_verify' %}">{% icon "shield" 16 %} Verify chain</button>
+    <button class="btn" data-verify="1" data-url="{% url 'chain_verify' %}">Deep verify</button>
+    <a class="btn primary" href="{% url 'attack_lab' %}">Attack lab</a>
+  </div>
+</div>
+<div id="verify-result" class="notice" hidden></div>
+
+<div class="grid cols-4" style="margin-bottom:18px">
+  <div class="card tile"><span class="glyph">{% icon "cube" 20 %}</span><span class="k">Block height</span><span class="v">#{{ height }}</span></div>
+  <div class="card tile"><span class="k">Transactions</span><span class="v">{{ stats.total }}</span><span class="s">{{ stats.reverted }} reverted by contracts</span></div>
+  <div class="card tile"><span class="k">Average confirmation</span><span class="v">{{ stats.avg_ms|default:0|floatformat:0 }} ms</span><span class="s">Slowest {{ stats.max_ms|default:0|floatformat:0 }} ms · target under 5 s</span></div>
+  <div class="card tile"><span class="k">Authority nodes</span><span class="v">3</span><span class="s">Round-robin sealing</span></div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <header><div><h2>Live chain</h2><p>Latest blocks, oldest on the left. Each block stores the hash of the one before it. Updates every 5 seconds.</p></div></header>
+  <div class="body"><div class="chain" id="chain-live" data-feed="{% url 'chain_feed' %}"></div></div>
+</div>
+
+<div class="grid split">
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Blocks</h2></div>
+        <form style="display:flex;gap:8px"><input name="q" value="{{ query }}" placeholder="Block number, hash, case ID or address" style="width:290px" aria-label="Search the ledger"><button class="btn">Search</button></form></header>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Block</th><th>Sealed</th><th>Validator</th><th class="right">Txs</th><th>Hash</th></tr></thead>
+          <tbody>
+            {% for b in page %}
+            <tr>
+              <td><a href="{% url 'block_detail' b.number %}"><b>#{{ b.number }}</b></a></td>
+              <td class="nowrap">{{ b.timestamp|from_ms|date:"d M Y, H:i:s" }}</td>
+              <td>{% if b.number %}{{ b.validator|label:book }}{% else %}<span class="muted">Genesis</span>{% endif %}</td>
+              <td class="right num">{{ b.tx_count }}</td>
+              <td>{% include "partials/hash.html" with value=b.hash size=6 %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5"><div class="empty"><b>No blocks match</b>Search by block number, block hash, case ID or wallet address.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% include "partials/pager.html" %}
+    </div>
+
+    <div class="card">
+      <header><div><h2>{% if query %}Matching{% else %}Latest{% endif %} transactions</h2></div></header>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Transaction</th><th>Call</th><th>From</th><th>Block</th><th>Result</th></tr></thead>
+          <tbody>
+            {% for tx in transactions %}
+            <tr>
+              <td>{% include "partials/hash.html" with value=tx.tx_hash tx=True size=5 %}</td>
+              <td><b>{{ tx.method }}</b><span class="sub">{{ tx.contract }}</span></td>
+              <td>{{ tx.sender|label:book }}</td>
+              <td><a href="{% url 'block_detail' tx.block.number %}">#{{ tx.block.number }}</a></td>
+              <td>{% if tx.status %}<span class="tag good">Success</span>{% else %}<span class="tag bad">Reverted</span>{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5"><div class="empty"><b>No transactions yet</b>They appear as soon as a case is filed or a role is granted.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Authority nodes</h2><p>Only these keys can seal blocks</p></div></header>
+      <div class="body">
+        {% for a in authorities %}
+        <p style="margin-bottom:12px"><b>{{ a.name }}</b> <span class="tag {% if a.kind == 'ROOT' %}brass{% endif %}">{{ a.get_kind_display }}</span><br>
+          {% include "partials/hash.html" with value=a.address size=8 %}</p>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <header><div><h2>Smart contracts</h2><p>Rules every node enforces</p></div></header>
+      <div class="body">
+        {% for name, address in contracts.items %}
+        <p style="margin-bottom:12px"><b>{{ name }}</b><br>{% include "partials/hash.html" with value=address size=8 %}</p>
+        {% endfor %}
+        <p class="small muted" style="margin:0">AccessControl maps wallets to roles. CaseRegistry anchors FIR and document hashes and enforces the case workflow. EvidenceRegistry holds file hashes and the chain of custody.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{{ strip|json_script:"chain-data" }}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/chain.js' %}"></script>{% endblock %}

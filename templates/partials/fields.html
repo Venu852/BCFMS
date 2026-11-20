@@ -1,0 +1,16 @@
+{% if form.non_field_errors %}<div class="notice bad"><div>{{ form.non_field_errors }}</div></div>{% endif %}
+{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+<div class="{% if columns %}form-grid{% endif %}">
+  {% for field in form.visible_fields %}
+  <div class="field {% if field.widget_type == 'checkbox' %}check{% endif %} {% if field.widget_type == 'textarea' or field.widget_type == 'clearablefile' or field.widget_type == 'file' %}wide{% endif %}">
+    {% if field.widget_type == "checkbox" %}
+    <label>{{ field }} {{ field.label }}</label>
+    {% else %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required %} <span class="muted" style="font-weight:400">(optional)</span>{% endif %}</label>
+    {{ field }}
+    {% endif %}
+    {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+    {% for error in field.errors %}<div class="err">{{ error }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+</div>

@@ -1,0 +1,24 @@
+{% load bcfms %}
+<div class="flag-item flag-row {{ flag.severity|lower }}">
+  <div>
+    <span class="sev {{ flag.severity|lower }}">{{ flag.get_severity_display }}</span>
+    <span class="tag">{{ flag.get_category_display }}</span>
+    {% if flag.status != "OPEN" %}<span class="tag {% if flag.status == 'REVIEWED' %}good{% endif %}">{{ flag.get_status_display }}</span>{% endif %}
+    <h3>{{ flag.title }}</h3>
+    <div class="small muted">
+      {% if flag.officer %}<a href="{% url 'officer_monitor' flag.officer.pk %}">{{ flag.officer.display_name }}</a> ({{ flag.officer.get_role_display }}){% else %}Unknown user{% endif %}
+      · {{ flag.created_at|date:"d M Y, H:i" }}
+      {% if flag.case %} · <a href="{{ flag.case.get_absolute_url }}">{{ flag.case.fir_number }}</a>{% endif %}
+    </div>
+    {% if flag.detail %}<div class="quote">{{ flag.detail }}</div>{% endif %}
+    {% if flag.reviewed_by %}<div class="small muted" style="margin-top:6px">Reviewed by {{ flag.reviewed_by.display_name }}, {{ flag.reviewed_at|date:"d M Y, H:i" }}{% if flag.review_note %}: {{ flag.review_note }}{% endif %}</div>{% endif %}
+  </div>
+  {% if flag.status == "OPEN" and review %}
+  <form method="post" action="{% url 'flag_review' flag.pk %}">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <input name="note" placeholder="Review note (optional)" aria-label="Review note" maxlength="250">
+    <button class="btn sm primary" name="outcome" value="REVIEWED">Action taken</button>
+    <button class="btn sm" name="outcome" value="DISMISSED">No concern</button>
+  </form>
+  {% endif %}
+</div>

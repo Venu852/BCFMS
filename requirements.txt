@@ -1,0 +1,22 @@
+Django>=5.2,<6.0
+djangorestframework>=3.16
+python-dotenv>=1.0
+cryptography>=42.0
+pycryptodome>=3.20
+pyotp>=2.9
+qrcode[pil]>=7.4
+reportlab>=4.0
+pypdf>=4.0
+python-docx>=1.1
+numpy>=1.26
+huggingface_hub>=0.30
+
+# --- Local LLM-RAG stack: everything runs on this machine, no external AI service ---
+# Embeddings (all-MiniLM-L6-v2). Install the torch build for your GPU/CPU:
+#   https://pytorch.org/get-started/locally/
+torch>=2.4
+transformers>=4.45
+# Gemma 4 E2B GGUF runtime. For an NVIDIA GPU install the prebuilt CUDA wheel:
+#   pip install llama-cpp-python --only-binary=:all: --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
+# For CPU only use .../whl/cpu instead.
+# llama-cpp-python>=0.3.36

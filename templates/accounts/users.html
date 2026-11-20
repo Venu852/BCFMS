@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Officers{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Officers</h1><p>Accounts are issued by the admin office. Open an officer to see everything they have done on the platform.</p></div>
+  <div class="actions">
+    <a class="btn primary" href="{% url 'officer_create' %}">{% icon "plus" 16 %} Create officer login</a>
+    <a class="btn" href="{% url 'departments' %}">Departments</a>
+  </div>
+</div>
+<div class="card">
+  <div class="body">
+    <form class="filters">
+      <div class="field"><label for="q">Name, user ID or badge</label><input id="q" name="q" value="{{ query }}"></div>
+      <div class="field"><label for="role">Role</label>
+        <select id="role" name="role"><option value="">All roles</option>
+          {% for value, label in roles %}<option value="{{ value }}" {% if request.GET.role == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select></div>
+      <div class="field"><button class="btn primary">Filter</button></div>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Officer</th><th>Role</th><th>Department</th><th>Last activity</th><th>Status</th><th class="right">Open flags</th><th></th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><b>{{ u.display_name }}</b><span class="sub">{{ u.username }}{% if u.badge_number %} · {{ u.badge_number }}{% endif %}</span></td>
+          <td>{{ u.get_role_display }}</td>
+          <td>{{ u.department.name|default:"—" }}</td>
+          <td>{% if u.last_seen %}{{ u.last_seen|date:"d M Y, H:i" }}{% else %}<span class="muted">Never signed in</span>{% endif %}</td>
+          <td>
+            {% if not u.is_active or not u.is_approved %}<span class="tag bad">Suspended</span>
+            {% elif u.must_change_password %}<span class="tag warn">Password not yet set</span>
+            {% else %}<span class="tag good">Active</span>{% endif %}
+          </td>
+          <td class="right num">{% if u.open_flags %}<span class="sev high">{{ u.open_flags }}</span>{% else %}0{% endif %}</td>
+          <td class="right nowrap">
+            <a class="btn sm" href="{% url 'officer_monitor' u.pk %}">Activity</a>
+            <a class="btn sm" href="{% url 'user_edit' u.pk %}">Manage</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7"><div class="empty"><b>No officers match</b>Try a different name or clear the filter.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

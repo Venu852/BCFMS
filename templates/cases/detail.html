@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}{{ case.fir_number }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'case_list' %}">Cases</a> / {{ case.fir_number }}</div>
+    <h1>{{ case.fir_number }} {% include "partials/status.html" %}</h1>
+    <p>{{ case.crime_type }} · {{ case.incident_location }} · {{ case.department.name }}</p>
+    <div class="access-line">{% include "partials/access.html" %}<span>{{ access.summary }}</span></div>
+  </div>
+  <div class="actions">
+    {% if can.start %}
+    <form method="post" action="{% url 'case_status' case.case_id %}" data-confirm="Start the investigation? The status change is recorded on the blockchain.">{% csrf_token %}
+      <input type="hidden" name="status" value="UNDER_INVESTIGATION"><button class="btn primary">Start investigation</button></form>
+    {% endif %}
+    {% if can.chargesheet %}<a class="btn primary" href="{% url 'chargesheet_file' case.case_id %}">File chargesheet</a>{% endif %}
+    {% if can.verdict %}<a class="btn primary" href="{% url 'verdict_add' case.case_id %}">Record verdict</a>{% endif %}
+    <a class="btn" href="{% url 'case_verify' case.case_id %}">{% icon "shield" 16 %} Verify authenticity</a>
+    <a class="btn" href="{% url 'case_pdf' case.case_id %}">{% icon "download" 16 %} PDF</a>
+    {% if user.role == "ADMIN" or user.role == "POLICE" or user.role == "INVESTIGATOR" %}<a class="btn" href="{% url 'assistant' %}?case={{ case.case_id }}">{% icon "spark" 16 %} Ask assistant</a>{% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <div class="body">
+    <div class="stepper" aria-label="Case progress">
+      {% for step in steps %}
+      <div class="step {% if forloop.counter0 < case.progress %}done{% elif forloop.counter0 == case.progress %}now{% endif %}">{{ step.label }}</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="tabs" data-tabs role="tablist">
+  <button data-tab="overview" role="tab">Overview</button>
+  <button data-tab="notes" role="tab">Investigation <span class="n">{{ notes|length }}</span></button>
+  <button data-tab="evidence" role="tab">Evidence <span class="n">{{ evidence|length }}</span></button>
+  <button data-tab="court" role="tab">Court</button>
+  <button data-tab="sharing" role="tab">Sharing &amp; tasks</button>
+  <button data-tab="history" role="tab">History</button>
+</div>
+
+<section class="tab-panel" data-panel="overview">
+  <div class="grid split">
+    <div class="stack">
+      <div class="card">
+        <header><div><h2>First Information Report</h2></div>{% if can.edit %}<a class="btn sm" href="{% url 'case_edit' case.case_id %}">Edit</a>{% endif %}</header>
+        <div class="body">
+          <dl class="meta">
+            <dt>Filed</dt><dd>{{ case.filed_at|date:"d M Y, H:i" }} by {{ case.filed_by.display_name }}</dd>
+            <dt>Incident</dt><dd>{{ case.incident_date|date:"d M Y" }} · {{ case.incident_location }}, {{ case.district }}</dd>
+            <dt>Sections applied</dt><dd>{{ case.sections_applied }}</dd>
+            <dt>Priority</dt><dd>{{ case.get_priority_display }}</dd>
+            <dt>Complainant</dt>
+            <dd>{{ case.complainant_name }}
+              {% if access.personal %}{% if case.complainant_contact %} · {{ case.complainant_contact }}{% endif %}<span class="sub muted small" style="display:block">{{ case.complainant_address }}</span>
+              {% else %}<span class="sub restricted small" style="display:block">{% icon "lock" 12 %} Contact details and address are restricted at your access level</span>{% endif %}</dd>
+            <dt>Description</dt><dd class="prose">{{ case.description }}</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <header><div><h2>Accused</h2></div>{% if can.edit %}<a class="btn sm" href="{% url 'accused_add' case.case_id %}">Add accused</a>{% endif %}</header>
+        <div class="table-wrap">
+          <table>
+            {% if accused %}<thead><tr><th>Name</th><th>Age</th><th>Status</th><th>Address</th><th></th></tr></thead>{% endif %}
+            <tbody>
+              {% for a in accused %}
+              <tr><td><b>{{ a.name }}</b><span class="sub">{{ a.gender }}</span></td><td>{{ a.age|default:"—" }}</td><td><span class="tag">{{ a.get_status_display }}</span></td><td>{% if access.personal %}{{ a.address|default:"—" }}{% else %}<span class="restricted small">Restricted</span>{% endif %}</td>
+                <td class="right">{% if can.edit %}<form method="post" action="{% url 'accused_remove' case.case_id a.pk %}" data-confirm="Remove {{ a.name }} from this FIR? This changes a sealed record: it raises a tamper alert to you and to the admin office.">{% csrf_token %}<button class="btn sm danger">Remove</button></form>{% endif %}</td></tr>
+              {% empty %}
+              <tr><td><div class="empty"><b>No accused named</b>Add accused persons as the investigation identifies them.</div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <header><div><h2>Assignment</h2></div>{% if can.assign %}<a class="btn sm" href="{% url 'case_assign' case.case_id %}">{% if case.investigating_officer %}Reassign{% else %}Assign{% endif %}</a>{% endif %}</header>
+        <div class="body">
+          <dl class="meta" style="grid-template-columns:120px minmax(0,1fr)">
+            <dt>Investigating Officer</dt><dd>{{ case.investigating_officer.display_name|default:"Not assigned" }}</dd>
+            <dt>Station</dt><dd>{{ case.department.name }}</dd>
+          </dl>
+          {% if can.close %}
+          <form method="post" action="{% url 'case_status' case.case_id %}" style="margin-top:14px" data-confirm="Close this case without a chargesheet? This is final and recorded on the blockchain.">{% csrf_token %}
+            <input type="hidden" name="status" value="CLOSED"><button class="btn sm danger">Close case without chargesheet</button></form>
+          {% endif %}
+        </div>
+      </div>
+      {% if show_chain %}
+      <div class="card">
+        <header><div><h2>Blockchain anchor</h2><p>What the ledger holds for this FIR</p></div></header>
+        <div class="body">
+          <dl class="meta" style="grid-template-columns:120px minmax(0,1fr)">
+            <dt>Case ID</dt><dd class="mono">{{ case.case_id }}</dd>
+            <dt>Record hash</dt><dd>{% include "partials/hash.html" with value=case.record_hash size=7 %}</dd>
+            <dt>Last transaction</dt><dd>{% include "partials/hash.html" with value=case.tx_hash tx=True size=7 %}</dd>
+            <dt>Viewed</dt><dd>{{ views_count }} time{{ views_count|pluralize }} (each view is logged)</dd>
+          </dl>
+        </div>
+      </div>
+      {% else %}
+      <div class="card">
+        <div class="body">
+          <span class="sealed">{% icon "shield" 15 %} This case file is protected on the secure ledger</span>
+          <p class="small muted" style="margin:8px 0 0">Every change is recorded against the officer who made it. Use “Verify authenticity” to confirm nothing has been altered.</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="tab-panel" data-panel="notes" hidden>
+  <div class="card">
+    <header><div><h2>Investigation notes</h2><p>Notes cannot be edited once added. A withdrawn note stays on record.</p></div>
+      {% if can.note %}<a class="btn sm primary" href="{% url 'note_add' case.case_id %}">Add note</a>{% endif %}</header>
+    <div class="body">
+      <ul class="timeline">
+        {% for note in notes %}
+        <li class="onchain{% if note.removed %} bad{% endif %}">
+          <div class="when">{{ note.created_at|date:"d M Y, H:i" }} · {{ note.author.display_name }} · {{ note.uid }}</div>
+          <div class="what">{{ note.title }} {% if note.removed %}<span class="tag bad">Withdrawn</span>{% endif %}</div>
+          {% if not note.removed %}<div class="detail prose">{{ note.text }}</div>{% endif %}
+          <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            {% include "partials/hash.html" with value=note.tx_hash tx=True size=5 %}
+            {% if can.note and not note.removed and note.author_id == user.pk %}
+            <form method="post" action="{% url 'note_remove' case.case_id note.uid %}" data-confirm="Withdraw this note? This changes a sealed record: it raises a tamper alert to you and to the admin office.">{% csrf_token %}<button class="btn sm ghost">Withdraw</button></form>
+            {% endif %}
+          </div>
+        </li>
+        {% empty %}
+        <li><div class="detail">No investigation notes yet.{% if case.status == "FILED" %} Start the investigation to begin adding notes.{% endif %}</div></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="tab-panel" data-panel="evidence" hidden>
+  <div class="card">
+    <header><div><h2>Evidence</h2><p>Files are stored encrypted, and every access is recorded.</p></div>
+      {% if can.evidence %}<a class="btn sm primary" href="{% url 'evidence_add' case.case_id %}">Upload evidence</a>{% endif %}</header>
+    <div class="table-wrap">
+      <table>
+        {% if evidence %}<thead><tr><th>Item</th><th>Type</th><th>Collected</th><th>Custodian</th><th>{% if show_chain %}File hash{% else %}Integrity{% endif %}</th></tr></thead>{% endif %}
+        <tbody>
+          {% for e in evidence %}
+          <tr>
+            <td><a href="{{ e.get_absolute_url }}"><b>{{ e.title }}</b></a><span class="sub mono">{{ e.uid }}</span></td>
+            <td>{{ e.get_kind_display }}<span class="sub">{{ e.size|filesize }}</span></td>
+            <td>{{ e.collected_at|date:"d M Y" }}<span class="sub">{{ e.collected_location|truncatechars:30 }}</span></td>
+            <td>{{ e.custodian.display_name }}</td>
+            <td>{% include "partials/hash.html" with value=e.sha256 size=5 %}</td>
+          </tr>
+          {% empty %}
+          <tr><td><div class="empty"><b>No evidence registered</b>Uploaded files are hashed, encrypted and logged with a full chain of custody.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="tab-panel" data-panel="court" hidden>
+  <div class="grid cols-2">
+    <div class="card">
+      <header><div><h2>Chargesheet</h2></div>{% if can.chargesheet %}<a class="btn sm primary" href="{% url 'chargesheet_file' case.case_id %}">File chargesheet</a>{% endif %}</header>
+      <div class="body">
+        {% if chargesheet %}
+        <dl class="meta" style="grid-template-columns:120px minmax(0,1fr)">
+          <dt>Filed</dt><dd>{{ chargesheet.filed_at|date:"d M Y, H:i" }} by {{ chargesheet.filed_by.display_name }}</dd>
+          <dt>Court</dt><dd>{{ chargesheet.court }}</dd>
+          <dt>Sections</dt><dd>{{ chargesheet.sections }}</dd>
+          <dt>Summary</dt><dd class="prose">{{ chargesheet.summary }}</dd>
+          <dt>Witnesses</dt><dd class="prose">{{ chargesheet.witnesses|default:"—" }}</dd>
+          <dt>Transaction</dt><dd>{% include "partials/hash.html" with value=chargesheet.tx_hash tx=True size=6 %}</dd>
+        </dl>
+        {% else %}<p class="muted" style="margin:0">No chargesheet has been filed. The Investigating Officer files it once the investigation is complete.</p>{% endif %}
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <header><div><h2>Hearings</h2></div>{% if can.hearing %}<a class="btn sm" href="{% url 'hearing_add' case.case_id %}">Schedule hearing</a>{% endif %}</header>
+        <div class="body">
+          {% for h in hearings %}
+          <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:12px">
+            <div><b>{{ h.scheduled_for|date:"D d M Y, H:i" }}</b> {% if h.cancelled %}<span class="tag bad">Cancelled</span>{% endif %}
+              <span class="sub small" style="display:block">{{ h.purpose }}</span><span class="sub muted small" style="display:block">{{ h.court }}</span></div>
+            {% if can.hearing and not h.cancelled %}<form method="post" action="{% url 'hearing_cancel' case.case_id h.uid %}" data-confirm="Cancel this hearing? Officers on the case will be notified.">{% csrf_token %}<button class="btn sm ghost">Cancel</button></form>{% endif %}
+          </div>
+          {% empty %}<p class="muted" style="margin:0">No hearings scheduled.</p>{% endfor %}
+        </div>
+      </div>
+      <div class="card">
+        <header><div><h2>Verdict</h2></div>{% if can.verdict %}<a class="btn sm primary" href="{% url 'verdict_add' case.case_id %}">Record verdict</a>{% endif %}</header>
+        <div class="body">
+          {% if verdict %}
+          <dl class="meta" style="grid-template-columns:120px minmax(0,1fr)">
+            <dt>Outcome</dt><dd><b>{{ verdict.get_outcome_display }}</b></dd>
+            <dt>Delivered</dt><dd>{{ verdict.delivered_at|date:"d M Y" }} by {{ verdict.judge.display_name }}</dd>
+            <dt>Sentence</dt><dd>{{ verdict.sentence|default:"—" }}</dd>
+            <dt>Judgement</dt><dd class="prose">{{ verdict.judgement }}</dd>
+            <dt>Transaction</dt><dd>{% include "partials/hash.html" with value=verdict.tx_hash tx=True size=6 %}</dd>
+          </dl>
+          {% else %}<p class="muted" style="margin:0">No verdict recorded.</p>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tab-panel" data-panel="sharing" hidden>
+  <div class="grid cols-2">
+    <div class="card">
+      <header><div><h2>Shared with</h2><p>Departments granted access to this case file</p></div>{% if can.share %}<a class="btn sm" href="{% url 'share_add' case.case_id %}">Share case</a>{% endif %}</header>
+      <div class="body">
+        {% for s in shares %}
+        <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:12px">
+          <div><b>{{ s.department.name }}</b> {% if s.revoked %}<span class="tag bad">Revoked</span>{% else %}<span class="tag good">Active</span>{% endif %}
+            <span class="sub small" style="display:block">{{ s.reason }}</span>
+            <span class="sub muted small" style="display:block">by {{ s.shared_by.display_name }}, {{ s.created_at|date:"d M Y" }}</span></div>
+          {% if can.share and not s.revoked %}<form method="post" action="{% url 'share_revoke' case.case_id s.pk %}" data-confirm="Revoke {{ s.department.name }}'s access to this case?">{% csrf_token %}<button class="btn sm danger">Revoke</button></form>{% endif %}
+        </div>
+        {% empty %}<p class="muted" style="margin:0">Not shared outside {{ case.department.name }}.</p>{% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <header><div><h2>Tasks</h2></div>{% if can.task %}<a class="btn sm" href="{% url 'task_add' case.case_id %}">Assign task</a>{% endif %}</header>
+      <div class="body">
+        {% for t in tasks %}
+        <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:12px">
+          <div><b>{{ t.title }}</b> {% if t.done %}<span class="tag good">Done</span>{% endif %}
+            <span class="sub muted small" style="display:block">{{ t.assigned_to.display_name }}{% if t.due_date %} · due {{ t.due_date|date:"d M Y" }}{% endif %}</span></div>
+          {% if not t.done and t.assigned_to_id == user.pk %}<form method="post" action="{% url 'task_done' t.pk %}">{% csrf_token %}<button class="btn sm">Mark done</button></form>{% endif %}
+        </div>
+        {% empty %}<p class="muted" style="margin:0">No tasks on this case.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tab-panel" data-panel="history" hidden>
+  <div class="grid {% if show_chain %}cols-2{% endif %}">
+    {% if show_chain %}
+    <div class="card">
+      <header><div><h2>On-chain history</h2><p>Every transaction that touched this case, newest first</p></div></header>
+      <div class="body">
+        <ul class="timeline">
+          {% for tx in transactions %}
+          <li class="onchain{% if not tx.status %} bad{% endif %}">
+            <div class="when">Block <a href="{% url 'block_detail' tx.block.number %}">#{{ tx.block.number }}</a> · {{ tx.timestamp|from_ms|date:"d M Y, H:i:s" }}</div>
+            <div class="what">{{ tx.contract }}.{{ tx.method }} {% if not tx.status %}<span class="tag bad">Reverted</span>{% endif %}</div>
+            <div class="detail">Signed by {{ tx.sender|label:book }}{% if tx.error %}<br>{{ tx.error }}{% endif %}</div>
+            <div style="margin-top:5px">{% include "partials/hash.html" with value=tx.tx_hash tx=True size=6 %}</div>
+          </li>
+          {% empty %}<li><div class="detail">No transactions.</div></li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+    <div class="card">
+      <header><div><h2>Case history</h2><p>What was done on this case, by whom and when</p></div></header>
+      <div class="body">
+        <ul class="timeline">
+          {% for e in audit_entries %}
+          <li class="{% if e.action == 'CHAIN_REVERT' %}bad{% endif %}">
+            <div class="when">{{ e.created_at|date:"d M Y, H:i" }} · {{ e.actor_name }}{% if e.actor_role %} ({{ e.actor_role|title }}){% endif %}</div>
+            <div class="what">{{ e.action|action_name }}{% if e.target %} · {{ e.target }}{% endif %}</div>
+            {% if e.detail %}<div class="detail">{{ e.detail|truncatechars:220 }}</div>{% endif %}
+          </li>
+          {% empty %}<li><div class="detail">No activity recorded.</div></li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

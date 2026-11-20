@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static bcfms %}
+{% block title %}Attack lab{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <div class="crumbs"><a href="{% url 'explorer' %}">Blockchain</a> / Attack lab</div>
+  <h1>Attack lab</h1>
+  <p>Try to cheat the ledger and watch what happens. Every attack runs against a copy of the real chain, so nothing here changes actual records.</p>
+</div></div>
+
+<div id="attack-lab" data-url="{% url 'attack_run' %}">
+  <div class="card" style="margin-bottom:18px">
+    <header><div><h2>The chain</h2><p>The latest {{ strip|length }} blocks. Green means the block passes every check; red means it was rejected.</p></div>
+      <button class="btn sm ghost" id="attack-reset">Reset view</button></header>
+    <div class="body"><div class="chain" id="attack-chain"></div></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:minmax(0,340px) minmax(0,1fr)">
+    <div class="card">
+      <header><div><h2>Choose an attack</h2></div></header>
+      <div class="body">
+        <div class="attack-list">
+          {% for key, attack in attacks.items %}
+          <button class="attack" data-attack="{{ key }}" data-needs-block="{% if attack.needs_block %}1{% else %}0{% endif %}" aria-pressed="false">
+            <b>{{ attack.title }}</b><span>{{ attack.blurb }}</span>
+          </button>
+          {% endfor %}
+        </div>
+        <div class="field" id="attack-block-field" style="margin-top:14px" hidden>
+          <label for="attack-block">Block to tamper with</label>
+          <select id="attack-block">
+            {% for b in strip %}{% if b.number %}<option value="{{ b.number }}">#{{ b.number }} — {{ b.action }}</option>{% endif %}{% endfor %}
+          </select>
+        </div>
+        <button class="btn primary" id="attack-run" style="margin-top:14px;width:100%" disabled>{% icon "play" 14 %} Run attack</button>
+      </div>
+    </div>
+    <div id="attack-result" hidden></div>
+  </div>
+</div>
+{{ strip|json_script:"chain-data" }}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/chain.js' %}"></script>{% endblock %}

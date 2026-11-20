@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Transaction{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <div class="crumbs"><a href="{% url 'explorer' %}">Blockchain</a> / <a href="{% url 'block_detail' tx.block.number %}">Block #{{ tx.block.number }}</a> / Transaction</div>
+  <h1>{{ tx.contract }}.{{ tx.method }} {% if tx.status %}<span class="tag good">Success</span>{% else %}<span class="tag bad">Reverted</span>{% endif %}</h1>
+  <p>Confirmed in block #{{ tx.block.number }} in {{ tx.confirm_ms|floatformat:1 }} ms</p>
+</div></div>
+{% if not tx.status %}
+<div class="notice bad">{% icon "alert" %}<div><b>The smart contract rejected this call</b><span>{{ tx.error }}. No state was changed; the attempt stays on the ledger.</span></div></div>
+{% endif %}
+
+<div class="grid split">
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Details</h2></div></header>
+      <div class="body">
+        <dl class="meta">
+          <dt>Transaction hash</dt><dd><span class="hash full"><span>{{ tx.tx_hash }}</span><button type="button" data-copy="{{ tx.tx_hash }}">copy</button></span></dd>
+          <dt>From</dt><dd>{{ tx.sender|label:book }}<span class="sub mono muted" style="display:block">{{ tx.sender }}</span></dd>
+          <dt>To (contract)</dt><dd>{{ tx.to|label:book }}<span class="sub mono muted" style="display:block">{{ tx.to }}</span></dd>
+          <dt>Nonce</dt><dd class="num">{{ tx.nonce }} <span class="muted small">(prevents the transaction being replayed)</span></dd>
+          <dt>Timestamp</dt><dd>{{ tx.timestamp|from_ms|date:"d M Y, H:i:s" }}</dd>
+          <dt>Gas used</dt><dd class="num">{{ tx.gas_used }}</dd>
+          {% if tx.case_ref %}<dt>Case</dt><dd><a href="{% url 'case_detail' tx.case_ref %}">{{ tx.case_ref }}</a></dd>{% endif %}
+        </dl>
+      </div>
+    </div>
+    <div class="card">
+      <header><div><h2>Call data</h2><p>Arguments passed to the contract method. Records appear only as hashes.</p></div></header>
+      <div class="body"><pre class="code">{{ tx.args|pretty_json }}</pre></div>
+    </div>
+    {% if tx.events %}
+    <div class="card">
+      <header><div><h2>Events emitted</h2></div></header>
+      <div class="body"><pre class="code">{{ tx.events|pretty_json }}</pre></div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card">
+    <header><div><h2>Signature check</h2><p>Recomputed just now</p></div></header>
+    <div class="body">
+      <p>{% if hash_ok %}<span class="tag good">{% icon "check" 12 %} Content matches hash</span>{% else %}<span class="tag bad">Content altered</span>{% endif %}</p>
+      <p>{% if signature_ok %}<span class="tag good">{% icon "check" 12 %} Signature valid</span>{% else %}<span class="tag bad">Signature invalid</span>{% endif %}</p>
+      <dl class="meta" style="grid-template-columns:minmax(0,1fr);gap:3px;margin-top:14px">
+        <dt>Signed digest (SHA-256)</dt><dd class="mono" style="word-break:break-all;margin-bottom:10px">{{ signing_hash }}</dd>
+        <dt>Signature (secp256k1 ECDSA, r‖s)</dt><dd class="mono" style="word-break:break-all;margin-bottom:10px">{{ tx.signature }}</dd>
+        <dt>Signer public key</dt><dd class="mono" style="word-break:break-all">{{ tx.public_key }}</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+{% endblock %}

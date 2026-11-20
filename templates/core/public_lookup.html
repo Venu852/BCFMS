@@ -1,0 +1,32 @@
+{% extends "base_auth.html" %}
+{% load bcfms %}
+{% block title %}FIR status{% endblock %}
+{% block content %}
+<h2>Check FIR status</h2>
+<p class="lead">Enter the FIR number printed on your acknowledgement, for example <span class="mono">FIR/KOR/2026/0001</span>.</p>
+<form method="get">
+  <div class="field"><label for="fir">FIR number</label><input id="fir" name="fir" value="{{ fir }}" required autofocus></div>
+  <button class="btn primary">Check status</button>
+</form>
+
+{% if searched %}
+<div style="margin-top:22px">
+  {% if case %}
+  <div class="card"><div class="body">
+    <dl class="meta" style="grid-template-columns:120px minmax(0,1fr)">
+      <dt>FIR number</dt><dd><b>{{ case.fir_number }}</b></dd>
+      <dt>Status</dt><dd>{% include "partials/status.html" %}</dd>
+      <dt>Filed on</dt><dd>{{ case.filed_at|date:"d M Y" }}</dd>
+      <dt>Police station</dt><dd>{{ case.department.name }}</dd>
+      <dt>Last updated</dt><dd>{{ case.updated_at|date:"d M Y" }}</dd>
+      <dt>Ledger record</dt><dd>{% if anchor %}Block #{{ anchor.block.number }} <span class="hash"><span>{{ case.tx_hash|short:6 }}</span></span>{% else %}—{% endif %}</dd>
+    </dl>
+    <p class="small muted" style="margin:14px 0 0">For your privacy, names and case details are not shown here. Contact the police station for more information.</p>
+  </div></div>
+  {% else %}
+  <div class="notice warn"><div><b>No FIR found with that number</b><span>Check the number and the slashes, then try again.</span></div></div>
+  {% endif %}
+</div>
+{% endif %}
+<div class="auth-links"><a href="{% url 'login' %}">Officer sign in</a></div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% load static bcfms %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}BCFMS{% endblock %} · BCFMS</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="tricolour" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="wrap">
+    <a class="identity" href="{% url 'dashboard' %}">
+      {% mark 46 %}
+      <span>
+        <span class="id-hi" lang="hi">अपराध अभिलेख प्रबंधन प्रणाली</span>
+        <span class="id-en">Crime File Management System · BCFMS</span>
+      </span>
+    </a>
+    <form class="top-search" action="{% url 'case_list' %}" role="search">
+      {% icon "search" 16 %}
+      <input type="search" name="q" placeholder="Search FIR number, name or keyword" aria-label="Search cases">
+    </form>
+    <div class="top-actions">
+      <a class="icon-btn" href="{% url 'notifications' %}" aria-label="Notifications" title="Notifications">
+        {% icon "bell" %}{% if unread_count %}<span class="pip">{{ unread_count }}</span>{% endif %}
+      </a>
+      <a class="who" href="{% url 'profile' %}" title="Your profile">
+        <b>{{ user.display_name }}</b><span>{{ user.get_role_display }}{% if user.department %} · {{ user.department.code }}{% endif %}</span>
+      </a>
+      <form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}
+        <button class="btn sm">Sign out</button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<nav class="appbar" aria-label="Main">
+  <div class="wrap">
+    {% for name, label in nav %}
+    {% url name as href %}
+    <a href="{{ href }}" class="{% nav_active href %}">{{ label }}{% if name == "flags" and open_flags %}<span class="count">{{ open_flags }}</span>{% endif %}</a>
+    {% endfor %}
+  </div>
+</nav>
+
+<main class="content">
+  <div class="wrap">
+    {% for alert in tamper_alerts %}
+    <div class="alert-bar" role="alert">
+      {% icon "alert" 20 %}
+      <div><b>{{ alert.title }}</b><span>{{ alert.message }} · {{ alert.created_at|date:"d M Y, H:i" }}</span></div>
+      <a class="btn sm" href="{% url 'notification_open' alert.pk %}">{% if show_chain %}Review{% else %}Acknowledge{% endif %}</a>
+    </div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+<footer class="app-foot">
+  <div class="wrap">
+    <span>BCFMS · Every action on this system is recorded against your user ID.</span>
+    <span>Signed in as {{ user.username }}</span>
+  </div>
+</footer>
+
+{% if messages %}
+<div class="toasts">
+  {% for message in messages %}<div class="toast {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
+</div>
+{% endif %}
+<script src="{% static 'js/app.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

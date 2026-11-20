@@ -1,0 +1,11 @@
+{% extends "base_auth.html" %}
+{% block title %}Verification code{% endblock %}
+{% block content %}
+<h2>Enter your verification code</h2>
+<p class="lead">Open your authenticator app and type the 6-digit code for BCFMS.</p>
+<form method="post" novalidate>{% csrf_token %}
+  {% include "partials/fields.html" %}
+  <button class="btn primary">Verify and sign in</button>
+</form>
+<div class="auth-links"><a href="{% url 'login' %}">Use a different account</a></div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}{{ officer.display_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'users' %}">Officers</a> / {{ officer.username }}</div>
+    <h1>{{ officer.display_name }}</h1>
+    <p>{{ officer.get_role_display }}{% if officer.department %} · {{ officer.department.name }}{% endif %}{% if officer.badge_number %} · Badge {{ officer.badge_number }}{% endif %}</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="{% url 'user_edit' officer.pk %}">Manage account</a>
+    <a class="btn" href="{% url 'audit_log' %}?officer={{ officer.pk }}&visits=1">Open in activity log</a>
+  </div>
+</div>
+
+<div class="grid cols-4" style="margin-bottom:18px">
+  <div class="card tile"><span class="k">Last sign-in</span><span class="v" style="font-size:19px">{% if summary.last_login %}{{ summary.last_login.created_at|date:"d M, H:i" }}{% else %}Never{% endif %}</span><span class="s">{% if summary.last_login.ip_address %}from {{ summary.last_login.ip_address }}{% endif %}</span></div>
+  <div class="card tile"><span class="k">Actions in the last 7 days</span><span class="v">{{ summary.week_actions }}</span><span class="s">{{ summary.changes }} record changes in total</span></div>
+  <div class="card tile"><span class="k">Questions to the assistant</span><span class="v">{{ summary.questions }}</span></div>
+  <div class="card tile"><span class="k">Open flags</span><span class="v">{{ open_flags }}</span><span class="s">{{ summary.denied }} refused attempts in total</span></div>
+</div>
+
+<div class="grid split">
+  <div class="card">
+    <header><div><h2>Activity</h2><p>Newest first</p></div>
+      <div class="actions">
+        <a class="btn sm {% if kind == 'actions' %}primary{% endif %}" href="?show=actions">Actions</a>
+        <a class="btn sm {% if kind == 'changes' %}primary{% endif %}" href="?show=changes">Record changes</a>
+        <a class="btn sm {% if kind == 'all' %}primary{% endif %}" href="?show=all">Everything, incl. pages opened</a>
+      </div></header>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>When</th><th>Action</th><th>Case</th><th>Detail</th></tr></thead>
+        <tbody>
+          {% for e in page %}
+          <tr>
+            <td class="nowrap">{{ e.created_at|date:"d M Y" }}<span class="sub">{{ e.created_at|date:"H:i:s" }}{% if e.ip_address %} · {{ e.ip_address }}{% endif %}</span></td>
+            <td>{% if e.action == "CHAIN_REVERT" or e.action == "ACCESS_DENIED" or e.action == "LOGIN_FAILED" %}<span class="tag bad">{{ e.action|action_name }}</span>{% else %}{{ e.action|action_name }}{% endif %}
+              {% if e.tx_hash %}<span class="sub">{% include "partials/hash.html" with value=e.tx_hash tx=True size=5 %}</span>{% endif %}</td>
+            <td>{% if e.case %}<a href="{{ e.case.get_absolute_url }}">{{ e.case.fir_number }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+            <td>{{ e.target }}<span class="sub">{{ e.detail|truncatechars:200 }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4"><div class="empty"><b>No activity</b>This officer has not done anything of this kind yet.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "partials/pager.html" %}
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Flags</h2></div><a class="btn sm" href="{% url 'flags' %}?officer={{ officer.pk }}&status=ALL">Review</a></header>
+      {% for flag in flags %}{% include "partials/flag.html" %}{% empty %}
+      <div class="empty">No flags for this officer.</div>
+      {% endfor %}
+    </div>
+    <div class="card">
+      <header><div><h2>Questions asked to the assistant</h2></div></header>
+      <div class="body">
+        {% for q in questions %}
+        <p style="margin-bottom:12px"><b>{{ q.question }}</b>
+          <span class="sub muted small" style="display:block">{{ q.created_at|date:"d M Y, H:i" }}{% if q.scope_case %} · {{ q.scope_case.fir_number }}{% endif %} · {{ q.sources|length }} passage{{ q.sources|length|pluralize }} used</span></p>
+        {% empty %}<p class="muted" style="margin:0">No questions asked.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

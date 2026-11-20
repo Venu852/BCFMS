@@ -1,0 +1,287 @@
+{% load static bcfms %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BCFMS · Blockchain-Enabled Intelligent Crime File Management System</title>
+  <meta name="description" content="Tamper-evident crime file management: FIRs, evidence and case histories sealed on a private blockchain, with a private AI case assistant.">
+  <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<div class="tricolour" aria-hidden="true"></div>
+
+<div class="util">
+  <div class="wrap">
+    <span>Crime and Criminal Records · Secure Digital Ledger</span>
+    <div class="util-tools">
+      <a href="#main">Skip to main content</a>
+      <span class="sizes" role="group" aria-label="Text size">
+        <button type="button" data-size="-1" aria-label="Smaller text">A−</button>
+        <button type="button" data-size="0" aria-label="Default text size">A</button>
+        <button type="button" data-size="1" aria-label="Larger text">A+</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <a class="identity" href="{% url 'index' %}">
+      {% mark 62 %}
+      <span>
+        <span class="id-hi" lang="hi">अपराध अभिलेख प्रबंधन प्रणाली</span>
+        <span class="id-en">Blockchain-Enabled Intelligent Crime File Management System</span>
+        <span class="id-tag">BCFMS · Secure · Verifiable · Accountable</span>
+      </span>
+    </a>
+    <div class="mast-cta">
+      <a class="btn line" href="{% url 'public_lookup' %}">Check FIR Status</a>
+      {% if user.is_authenticated %}
+      <a class="btn fill" href="{% url 'dashboard' %}">Open Dashboard</a>
+      {% else %}
+      <a class="btn fill" href="{% url 'login' %}">Officer Sign In</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<nav class="bar" aria-label="Sections">
+  <div class="wrap">
+    <a href="#main" class="on">Home</a>
+    <a href="#platform">Services</a>
+    <a href="#ledger">Blockchain Ledger</a>
+    <a href="#assistant">Case Assistant</a>
+    <a href="#roles">Stakeholders</a>
+    <a href="{% url 'public_lookup' %}">FIR Status</a>
+  </div>
+</nav>
+
+<main id="main">
+<section class="hero">
+  <canvas id="net" aria-hidden="true"></canvas>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="kicker">Integrity of records · Accountability of action</span>
+      <h1>Crime records that cannot be quietly rewritten</h1>
+      <p class="lead">A single, secure system for First Information Reports, evidence and case histories, shared by police, forensic laboratories and courts. Every record is hashed and sealed on a private blockchain, and officers can question case files in plain language without any data leaving the premises.</p>
+      <div class="hero-actions">
+        {% if user.is_authenticated %}
+        <a class="btn fill lg" href="{% url 'dashboard' %}">Open Dashboard</a>
+        {% else %}
+        <a class="btn fill lg" href="{% url 'login' %}">Officer Sign In</a>
+        <a class="btn line lg" href="{% url 'public_lookup' %}">Check FIR Status</a>
+        {% endif %}
+      </div>
+      <ul class="hero-points">
+        <li>{% icon "check" 15 %} SHA-256 anchored records</li>
+        <li>{% icon "check" 15 %} Proof-of-Authority consensus</li>
+        <li>{% icon "check" 15 %} Role-based access</li>
+      </ul>
+    </div>
+
+    <!-- 3D product scene: a tilted application window with cards floating in front of it -->
+    <div class="scene" id="scene" aria-hidden="true">
+      <div class="stage" id="stage">
+        <div class="win">
+          <div class="win-bar"><i></i><i></i><i></i><span>BCFMS · Dashboard</span></div>
+          <div class="win-body">
+            <div class="win-side">
+              <b></b><span class="on"></span><span></span><span></span><span></span><em></em><span></span><span></span>
+            </div>
+            <div class="win-main">
+              <div class="win-tiles">
+                <div><small>Block height</small><strong>#{{ height }}</strong></div>
+                <div><small>Transactions</small><strong>{{ transactions }}</strong></div>
+                <div><small>Confirmation</small><strong>{{ avg_ms }} ms</strong></div>
+              </div>
+              <div class="win-card">
+                <small>Cases by status</small>
+                <div class="win-stack"><span style="flex:2"></span><span style="flex:3"></span><span style="flex:2"></span><span style="flex:1"></span><span style="flex:2"></span></div>
+              </div>
+              <div class="win-card">
+                <small>Live chain</small>
+                <div class="win-chain">
+                  {% for b in blocks %}<div><b>#{{ b.number }}</b><code>{{ b.hash }}</code></div>{% if not forloop.last %}<i></i>{% endif %}{% endfor %}
+                </div>
+              </div>
+              <div class="win-rows"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="float f-verify">
+          <span class="f-icon good">{% icon "shield" 18 %}</span>
+          <div><b>Authentic</b><small>All records match the ledger</small></div>
+        </div>
+        <div class="float f-hash">
+          <small>Evidence SHA-256</small>
+          <code>0x9f2c…a41e</code>
+          <span class="bar-scan"><i></i></span>
+        </div>
+        <div class="float f-chat">
+          <small>{% icon "spark" 13 %} Case assistant</small>
+          <p>Fingerprints on the steering lock match the accused <em>S1</em></p>
+        </div>
+        <div class="float f-block">
+          <span class="f-icon navy">{% icon "cube" 18 %}</span>
+          <div><b>Block #{{ height }} sealed</b><small>Signed by an authority node</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="figures" aria-label="Ledger figures">
+  <div class="wrap">
+    <div><strong data-count="{{ height }}">{{ height }}</strong><span>Blocks sealed</span></div>
+    <div><strong data-count="{{ transactions }}">{{ transactions }}</strong><span>Signed transactions</span></div>
+    <div><strong><span data-count="{{ avg_ms }}">{{ avg_ms }}</span> ms</strong><span>Average confirmation</span></div>
+    <div><strong data-count="3">3</strong><span>Authority nodes</span></div>
+  </div>
+</section>
+
+<section class="section" id="platform">
+  <div class="wrap">
+    <div class="head reveal">
+      <h2>Services</h2>
+      <p>From the first complaint to the final verdict, every step is recorded once, signed by the officer who took it and visible to those entitled to see it.</p>
+    </div>
+    <div class="features">
+      <article class="feature tilt reveal">
+        <span class="f-ico">{% icon "folder" 22 %}</span>
+        <h3>FIR and Case Management</h3>
+        <p>File, search and track cases with automatic FIR numbers, hashed case IDs and a workflow from Filed to Convicted or Closed.</p>
+      </article>
+      <article class="feature tilt reveal">
+        <span class="f-ico">{% icon "lock" 22 %}</span>
+        <h3>Evidence Vault</h3>
+        <p>Files are encrypted with AES-256 off-chain. Only the hash goes on the ledger, so any altered file is detected at once.</p>
+      </article>
+      <article class="feature tilt reveal">
+        <span class="f-ico">{% icon "link" 22 %}</span>
+        <h3>Chain of Custody</h3>
+        <p>Every access, download and handover of evidence is a signed transaction with a name and a time against it.</p>
+      </article>
+      <article class="feature tilt reveal">
+        <span class="f-ico">{% icon "shield" 22 %}</span>
+        <h3>Smart-Contract Rules</h3>
+        <p>Contracts decide who may act and in what order. A forensic expert cannot record a verdict, whatever the screen allows.</p>
+      </article>
+      <article class="feature tilt reveal">
+        <span class="f-ico">{% icon "spark" 22 %}</span>
+        <h3>Private Case Assistant</h3>
+        <p>Ask questions across case files. Answers cite the FIR and document they came from, and the model runs on your own server.</p>
+      </article>
+      <article class="feature tilt reveal">
+        <span class="f-ico">{% icon "chart" 22 %}</span>
+        <h3>Audit and Reporting</h3>
+        <p>A complete audit trail, crime statistics, department-wise reports and PDF exports with an integrity certificate.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section navy" id="ledger">
+  <div class="wrap split">
+    <div class="reveal">
+      <h2>Blockchain Ledger</h2>
+      <p>Each block locks the one before it. Changing a single character in an old record changes its hash, which breaks every block that follows. Rewriting the chain would need the private keys of the police, forensic and judicial authority nodes.</p>
+      <ol class="steps">
+        <li><b>Sign</b><span>The officer's wallet signs the action with a secp256k1 key.</span></li>
+        <li><b>Enforce</b><span>A smart contract checks role and workflow, or reverts.</span></li>
+        <li><b>Seal</b><span>The in-turn authority node signs the block.</span></li>
+        <li><b>Verify</b><span>Anyone with access can re-check every hash at any time.</span></li>
+      </ol>
+      {% if user.is_authenticated and user.role == "ADMIN" %}<a class="btn line on-navy" href="{% url 'explorer' %}">Open the Blockchain Explorer</a>{% endif %}
+    </div>
+
+    <!-- 3D block chain: CSS cubes built from six faces each -->
+    <div class="cubes reveal" aria-hidden="true">
+      {% for b in blocks %}
+      <div class="cube-slot" style="--i:{{ forloop.counter0 }}">
+        <div class="cube">
+          <span class="face front"><b>#{{ b.number }}</b><code>{{ b.hash }}</code></span>
+          <span class="face back"><code>…{{ b.tail }}</code></span>
+          <span class="face right"><small>SHA-256</small></span>
+          <span class="face left"><small>SEALED</small></span>
+          <span class="face top"></span>
+          <span class="face bottom"></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section" id="assistant">
+  <div class="wrap split rev">
+    <div class="chatbox tilt reveal" aria-hidden="true">
+      <div class="chat-top"><i></i>Case assistant · Gemma 4, running on this server</div>
+      <div class="bubble me">Which cases involve a black Pulsar and a red hooded jacket?</div>
+      <div class="bubble bot">
+        <p id="typed" data-text="Two cases match. FIR/IND/2026/0002: a chain snatching by two men on a black Pulsar, the pillion rider in a red hooded jacket. FIR/KOR/2026/0001: CCTV shows the same description during a vehicle theft."></p>
+        <div class="cites"><span>S1 · FIR/IND/2026/0002 · FIR</span><span>S2 · FIR/KOR/2026/0001 · CCTV log</span></div>
+      </div>
+    </div>
+    <div class="reveal">
+      <h2>Case Assistant</h2>
+      <p>Investigators can find links between cases in seconds rather than reading every file. The assistant retrieves the relevant passages and writes an answer that points back to its sources.</p>
+      <ul class="ticks">
+        <li>{% icon "check" 16 %}<span><b>Isolated.</b> The language model is a file on your server. No case text is sent to any outside AI service.</span></li>
+        <li>{% icon "check" 16 %}<span><b>Access-aware.</b> It only ever reads cases the asking officer is allowed to open.</span></li>
+        <li>{% icon "check" 16 %}<span><b>Grounded.</b> Every statement carries a case number and document reference.</span></li>
+        <li>{% icon "check" 16 %}<span><b>Accountable.</b> Each question is written to the audit trail.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section grey" id="roles">
+  <div class="wrap">
+    <div class="head reveal">
+      <h2>Stakeholders</h2>
+      <p>Each role sees and does only what its responsibilities require.</p>
+    </div>
+    <div class="roles">
+      <div class="role tilt reveal"><span>{% icon "users" 20 %}</span><h3>Administrator</h3><p>User approval, roles, departments and the full audit trail.</p></div>
+      <div class="role tilt reveal"><span>{% icon "file" 20 %}</span><h3>Police Officer</h3><p>File and update FIRs, upload evidence, move cases forward.</p></div>
+      <div class="role tilt reveal"><span>{% icon "search" 20 %}</span><h3>Investigating Officer</h3><p>Investigation notes, linked evidence and the chargesheet.</p></div>
+      <div class="role tilt reveal"><span>{% icon "lock" 20 %}</span><h3>Forensic Expert</h3><p>Receive custody, analyse evidence and file forensic reports.</p></div>
+      <div class="role tilt reveal"><span>{% icon "shield" 20 %}</span><h3>Judiciary</h3><p>Verify authenticity, schedule hearings and record verdicts.</p></div>
+      <div class="role tilt reveal"><span>{% icon "bell" 20 %}</span><h3>Citizen</h3><p>Check the status of an FIR by number, with no personal data shown.</p></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div class="foot-id">
+      {% mark 46 %}
+      <div><b>BCFMS</b><span lang="hi">अपराध अभिलेख प्रबंधन प्रणाली</span></div>
+    </div>
+    <div>
+      <h4>Quick links</h4>
+      <a href="{% url 'login' %}">Officer Sign In</a>
+      <a href="{% url 'public_lookup' %}">Check FIR Status</a>
+    </div>
+    <div>
+      <h4>System</h4>
+      <a href="#ledger">Blockchain Ledger</a>
+      <a href="#assistant">Case Assistant</a>
+      <a href="#roles">Stakeholders</a>
+    </div>
+  </div>
+  <div class="foot-base">
+    <div class="wrap">
+      <span>Demonstration system built as an academic project. It is not an official website of the Government of India or of any police organisation.</span>
+      <span>Django · Python blockchain · Gemma 4</span>
+    </div>
+  </div>
+  <div class="tricolour" aria-hidden="true"></div>
+</footer>
+
+<script src="{% static 'js/landing.js' %}"></script>
+</body>
+</html>

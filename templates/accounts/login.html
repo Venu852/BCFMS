@@ -1,0 +1,23 @@
+{% extends "base_auth.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<h2>Sign in</h2>
+<p class="lead">Use your officer account to continue.</p>
+<form method="post" novalidate>{% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  {% include "partials/fields.html" %}
+  <button class="btn primary">Sign in</button>
+</form>
+<div class="auth-links">
+  <span class="muted">Logins are issued by the admin office.</span>
+  <a href="{% url 'public_lookup' %}">Check FIR status (public)</a>
+</div>
+{% if demo_users %}
+<div class="demo">
+  <b>Demo accounts</b> — click one to fill the form:
+  <div>
+    {% for name in demo_users %}<button type="button" data-demo-user="{{ name }}" data-demo-pass="Bcfms@2026">{{ name }}</button>{% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

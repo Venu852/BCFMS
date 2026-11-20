@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Audit trail{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>Activity log</h1>
+  <p>Every sign-in, page opened, view, addition, change, question and export by every officer, with the blockchain transaction where one was recorded. {{ total }} entr{{ total|pluralize:"y,ies" }} match.</p>
+</div></div>
+<div class="card">
+  <div class="body">
+    <form class="filters">
+      <div class="field"><label for="q">Officer, FIR, detail or transaction</label><input id="q" name="q" value="{{ query }}"></div>
+      <div class="field"><label for="officer">Officer</label>
+        <select id="officer" name="officer"><option value="">Everyone</option>
+          {% for o in officers %}<option value="{{ o.pk }}" {% if officer == o.pk|stringformat:"s" %}selected{% endif %}>{{ o.display_name }} ({{ o.username }})</option>{% endfor %}
+        </select></div>
+      <div class="field"><label for="action">Action</label>
+        <select id="action" name="action"><option value="">All actions</option>
+          {% for a in actions %}<option value="{{ a }}" {% if a == action %}selected{% endif %}>{{ a|action_name }}</option>{% endfor %}
+        </select></div>
+      <div class="field"><label for="date_from">From</label><input type="date" id="date_from" name="date_from" value="{{ request.GET.date_from }}"></div>
+      <div class="field"><label for="date_to">To</label><input type="date" id="date_to" name="date_to" value="{{ request.GET.date_to }}"></div>
+      <div class="field check"><label><input type="checkbox" name="visits" value="1" {% if visits %}checked{% endif %}> Include pages opened</label></div>
+      <div class="field"><button class="btn primary">Filter</button></div>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Case</th><th>Detail</th><th>Transaction</th></tr></thead>
+      <tbody>
+        {% for e in page %}
+        <tr>
+          <td class="nowrap">{{ e.created_at|date:"d M Y" }}<span class="sub">{{ e.created_at|date:"H:i:s" }}</span></td>
+          <td>{% if e.actor %}<a href="{% url 'officer_monitor' e.actor.pk %}"><b>{{ e.actor_name }}</b></a>{% else %}<b>{{ e.actor_name }}</b>{% endif %}<span class="sub">{{ e.actor_role|default:"" }}{% if e.ip_address %} · {{ e.ip_address }}{% endif %}</span></td>
+          <td>{% if e.action == "CHAIN_REVERT" or e.action == "LOGIN_FAILED" or e.action == "ACCESS_DENIED" %}<span class="tag bad">{{ e.action|action_name }}</span>{% else %}{{ e.action|action_name }}{% endif %}</td>
+          <td>{% if e.case %}<a href="{{ e.case.get_absolute_url }}">{{ e.case.fir_number }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td>{{ e.target }}<span class="sub">{{ e.detail|truncatechars:160 }}</span></td>
+          <td>{% include "partials/hash.html" with value=e.tx_hash tx=True size=5 %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty"><b>No entries match</b>Widen the date range or clear the filters.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pager.html" %}
+</div>
+{% endblock %}

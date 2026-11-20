@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Flags{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>Flags</h1>
+  <p>Officer activity that was flagged automatically: attempts to alter records, refused actions, access outside permission, sensitive changes and suspicious questions to the assistant. A flag is a prompt to look, not proof of wrongdoing.</p>
+</div></div>
+
+<div class="card">
+  <div class="body">
+    <form class="filters">
+      <div class="field"><label for="status">Status</label>
+        <select id="status" name="status">
+          {% for value, label in statuses %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          <option value="ALL" {% if status == "ALL" %}selected{% endif %}>All</option>
+        </select></div>
+      <div class="field"><label for="severity">Severity</label>
+        <select id="severity" name="severity"><option value="">Any</option>
+          {% for value, label in severities %}<option value="{{ value }}" {% if severity == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select></div>
+      <div class="field"><label for="officer">Officer</label>
+        <select id="officer" name="officer"><option value="">All officers</option>
+          {% for o in officers %}<option value="{{ o.pk }}" {% if officer == o.pk|stringformat:"s" %}selected{% endif %}>{{ o.display_name }} ({{ o.username }})</option>{% endfor %}
+        </select></div>
+      <div class="field"><button class="btn primary">Apply</button></div>
+    </form>
+  </div>
+  {% for flag in page %}{% include "partials/flag.html" with review=True %}{% empty %}
+  <div class="empty"><b>No flags match</b>{% if status == "OPEN" %}Nothing is waiting for review.{% else %}Try a different filter.{% endif %}</div>
+  {% endfor %}
+  {% include "partials/pager.html" %}
+</div>
+{% endblock %}

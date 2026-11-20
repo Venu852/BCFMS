@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Not permitted{% endblock %}
+{% block content %}
+<div class="card" style="max-width:560px">
+  <div class="body">
+    <h1>You don't have access to this</h1>
+    <p class="muted" style="margin-top:8px">{{ reason|default:"Your role or department does not permit this page or action." }}</p>
+    <p>Access in BCFMS follows your role and the cases your department holds or has been given. If you need this for your work, ask the officer in charge to share the case with your department.</p>
+    <a class="btn primary" href="{% url 'dashboard' %}">Back to dashboard</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% if rows %}
+<div class="bars">
+  {% for row in rows %}
+  <div class="bar-row" title="{{ row.label }}: {{ row.count }}">
+    <span class="name">{{ row.label }}</span>
+    <span class="track"><span class="fill" style="width:{{ row.pct }}%"></span></span>
+    <b>{{ row.count }}</b>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">No data for this selection.</div>
+{% endif %}

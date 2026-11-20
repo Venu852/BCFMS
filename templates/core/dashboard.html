@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Welcome, {{ user.first_name|default:user.username }}</h1>
+    <p>{{ user.get_role_display }}{% if user.department %} · {{ user.department.name }}{% endif %}</p>
+  </div>
+  <div class="actions">
+    {% if user.role == "POLICE" or user.role == "INVESTIGATOR" %}<a class="btn primary" href="{% url 'case_create' %}">{% icon "plus" 16 %} File FIR</a>{% endif %}
+    <a class="btn" href="{% url 'case_list' %}">Search cases</a>
+  </div>
+</div>
+
+<div class="grid cols-4" style="margin-bottom:18px">
+  <a class="card tile" href="{% url 'case_list' %}">
+    <span class="k">Cases you can access</span><span class="v">{{ stats.total }}</span>
+    <span class="s">{{ stats.open }} open · {{ stats.resolved }} resolved</span>
+  </a>
+  {% if user.role == "FORENSIC" %}
+  <div class="card tile"><span class="k">Evidence in your custody</span><span class="v">{{ custody_count }}</span><span class="s">Items you are responsible for</span></div>
+  {% else %}
+  <div class="card tile"><span class="k">Assigned to you</span><span class="v">{{ my_cases }}</span><span class="s">Open investigations you lead</span></div>
+  {% endif %}
+  <div class="card tile"><span class="k">Your open tasks</span><span class="v">{{ task_count }}</span></div>
+  <div class="card tile"><span class="k">Upcoming hearings</span><span class="v">{{ hearings|length }}</span><span class="s">Next 45 days</span></div>
+</div>
+
+<div class="grid split">
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Recent cases</h2></div><a class="btn sm" href="{% url 'case_list' %}">View all</a></header>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>FIR</th><th>Crime</th><th>Location</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for case in recent_cases %}
+            <tr>
+              <td><a href="{{ case.get_absolute_url }}"><b>{{ case.fir_number }}</b></a><span class="sub">{{ case.filed_at|date:"d M Y" }}</span></td>
+              <td>{{ case.crime_type }}</td>
+              <td>{{ case.incident_location|truncatechars:42 }}</td>
+              <td>{% include "partials/status.html" %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4"><div class="empty"><b>No cases to show</b>Cases appear here when they are filed at, assigned to, or shared with your department.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <header><div><h2>Cases by status</h2></div><a class="btn sm" href="{% url 'reports' %}">Reports</a></header>
+      <div class="body">{% include "partials/status_chart.html" %}</div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <header><div><h2>Alerts</h2></div><a class="btn sm" href="{% url 'notifications' %}">All</a></header>
+      <div class="body">
+        {% for alert in alerts %}
+        <p style="margin-bottom:12px"><a href="{% url 'notification_open' alert.pk %}"><b>{{ alert.title }}</b></a>
+          <span class="sub muted small" style="display:block">{{ alert.message|truncatechars:90 }} · {{ alert.created_at|timesince }} ago</span></p>
+        {% empty %}<p class="muted" style="margin:0">You're up to date.</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <header><div><h2>Your tasks</h2></div></header>
+      <div class="body">
+        {% for task in tasks %}
+        <form method="post" action="{% url 'task_done' task.pk %}" style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px">{% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'dashboard' %}">
+          <button class="btn sm" title="Mark as done" aria-label="Mark task as done">{% icon "check" 14 %}</button>
+          <div><b>{{ task.title }}</b>
+            <span class="sub muted small" style="display:block"><a href="{{ task.case.get_absolute_url }}">{{ task.case.fir_number }}</a>{% if task.due_date %} · due {{ task.due_date|date:"d M" }}{% endif %}</span></div>
+        </form>
+        {% empty %}<p class="muted" style="margin:0">No open tasks.</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <header><div><h2>Upcoming hearings</h2></div></header>
+      <div class="body">
+        {% for hearing in hearings %}
+        <p style="margin-bottom:12px"><b>{{ hearing.scheduled_for|date:"D d M, H:i" }}</b>
+          <span class="sub small" style="display:block"><a href="{{ hearing.case.get_absolute_url }}#court">{{ hearing.case.fir_number }}</a> · {{ hearing.purpose }}</span>
+          <span class="sub muted small" style="display:block">{{ hearing.court }}</span></p>
+        {% empty %}<p class="muted" style="margin:0">No hearings scheduled.</p>{% endfor %}
+      </div>
+    </div>
+
+    {% if custody %}
+    <div class="card">
+      <header><div><h2>Evidence in your custody</h2></div></header>
+      <div class="body">
+        {% for item in custody %}
+        <p style="margin-bottom:10px"><a href="{{ item.get_absolute_url }}"><b>{{ item.uid }}</b></a> {{ item.title|truncatechars:40 }}
+          <span class="sub muted small" style="display:block">{{ item.case.fir_number }}</span></p>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

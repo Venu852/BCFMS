@@ -1,0 +1,13 @@
+{# Stacked bar of cases by workflow status. Colour follows the status, never its rank. #}
+{% if stats.total %}
+<div class="stackbar" role="img" aria-label="Cases by status: {% for s in stats.segments %}{{ s.label }} {{ s.count }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+  {% for s in stats.segments %}{% if s.count %}<span style="flex:{{ s.count }};background:var(--series-{{ forloop.counter }})" title="{{ s.label }}: {{ s.count }} ({{ s.share }}%)"></span>{% endif %}{% endfor %}
+</div>
+<div class="legend">
+  {% for s in stats.segments %}
+  <div><i style="background:var(--series-{{ forloop.counter }})"></i>{{ s.label }}<b>{{ s.count }}</b></div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty"><b>No cases yet</b>Statistics appear once the first FIR is filed.</div>
+{% endif %}

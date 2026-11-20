@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Create officer login{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <div class="crumbs"><a href="{% url 'users' %}">Officers</a> / New</div>
+  <h1>Create officer login</h1>
+  <p>Enter the officer's details. The system generates the user ID and a one-time password for you to hand over. The officer must set their own password at first sign-in.</p>
+</div></div>
+<div class="card" style="max-width:820px">
+  <div class="body">
+    <form method="post" novalidate>{% csrf_token %}
+      {% include "partials/fields.html" with columns=True %}
+      <div class="actions">
+        <button class="btn primary">Create login and generate credentials</button>
+        <a class="btn ghost" href="{% url 'users' %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load bcfms %}
+{% block title %}Cases{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Cases</h1><p>{{ total }} case{{ total|pluralize }} you have access to{% if request.GET %} match this search{% endif %}.</p></div>
+  {% if can_file %}<div class="actions"><a class="btn primary" href="{% url 'case_create' %}">{% icon "plus" 16 %} File FIR</a></div>{% endif %}
+</div>
+<div class="card">
+  <div class="body">
+    <form class="filters">
+      {% for field in form %}
+      <div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>
+      {% endfor %}
+      <div class="field"><button class="btn primary">Search</button> <a class="btn ghost" href="{% url 'case_list' %}">Clear</a></div>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>FIR / Case ID</th><th>Crime</th><th>Incident</th><th>Complainant</th><th>Investigating Officer</th><th>Status</th><th>Your access</th></tr></thead>
+      <tbody>
+        {% for case in page %}
+        <tr>
+          <td><a href="{{ case.get_absolute_url }}"><b>{{ case.fir_number }}</b></a><span class="sub mono">{{ case.case_id }}</span></td>
+          <td>{{ case.crime_type }}<span class="sub">{{ case.sections_applied|truncatechars:34 }}</span></td>
+          <td>{{ case.incident_location|truncatechars:38 }}<span class="sub">{{ case.incident_date|date:"d M Y" }} · {{ case.district }}</span></td>
+          <td>{{ case.complainant_name }}</td>
+          <td>{{ case.investigating_officer.display_name|default:"Not assigned" }}<span class="sub">{{ case.department.name }}</span></td>
+          <td>{% include "partials/status.html" %}</td>
+          <td>{% include "partials/access.html" with access=case.access %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7"><div class="empty"><b>No cases found</b>
+          {% if request.GET %}Try fewer filters, or search by FIR number alone.{% else %}Cases appear here when they are filed at, assigned to, or shared with your department.{% endif %}</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pager.html" %}
+</div>
+{% endblock %}
